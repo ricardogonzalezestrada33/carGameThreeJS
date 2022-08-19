@@ -10,6 +10,15 @@
 </head>
 <body>
 
+  <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./threejs/build/three.module.js"
+      }
+    }
+  </script>
+
   <div id="threejs"> </div>
   <script src="./src/main.js" type="module"></script>
 

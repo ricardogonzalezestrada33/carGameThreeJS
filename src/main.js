@@ -1,10 +1,10 @@
-import * as THREE from "../threejs/build/three.module.js";
-
-
+import * as THREE from "three";
+import { OrbitControls} from '../threejs/examples/jsm/controls/OrbitControls.js';
 
 let elThreejs = document.getElementById("threejs");
 let camera,scene,renderer;
-
+let axesHelper;
+let controls;
 
 init();
 
@@ -20,7 +20,6 @@ function init() {
 		0.1,
 		1000
 	);
-  console.log(camera,"camera");
   camera.position.z = 5;
   camera.position.y = 1;
 
@@ -31,6 +30,24 @@ function init() {
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	renderer.shadowMap.enabled = true;
 	renderer.outputEncoding = THREE.sRGBEncoding;
+
+
+  // axesHelper
+	axesHelper = new THREE.AxesHelper( 100 );
+	scene.add( axesHelper );
+
+  // orbitControls
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.rotateSpeed = 1.0
+  controls.zoomSpeed = 1.2
+  controls.enableDamping = true
+  controls.enablePan = false
+  controls.dampingFactor = 0.2
+  controls.minDistance = 10
+  controls.maxDistance = 500
+  controls.enabled = true
+
+    
 
 	elThreejs.appendChild(renderer.domElement);
 
