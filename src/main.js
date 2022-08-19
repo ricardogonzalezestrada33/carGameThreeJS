@@ -57,13 +57,14 @@ function init() {
   controls.maxDistance = 500
   controls.enabled = true
 
-    
-
+  
 	elThreejs.appendChild(renderer.domElement);
 
   addBox();
-  addKeysListener();
+  addPlane();
+  addObstacle();
 
+  addKeysListener();
 	addGUI();
 
   animate()
@@ -84,10 +85,26 @@ function addBox(){
   let geometry = new THREE.BoxGeometry(1,1,1);
   let material = new THREE.MeshBasicMaterial({color: 'pink'});
   cube = new THREE.Mesh(geometry, material);
+  cube.position.set(0, 0.5, 0);
   console.log(cube, "cube");
   scene.add(cube);
 }
 
+function addPlane(){
+  let geometry =  new THREE.BoxGeometry(20, 0, 200);
+  let material = new THREE.MeshBasicMaterial({color: 'gray'});
+  let plane = new THREE.Mesh(geometry, material);
+  plane.position.set(0, 0, -90);
+  scene.add(plane);
+}
+
+function addObstacle(){
+  let geometry = new THREE.BoxGeometry(1,1,1);
+  let material = new THREE.MeshBasicMaterial({color: 'red'});
+  let obstacle = new THREE.Mesh(geometry, material);
+  obstacle.position.set(0, 0.5, -10);
+  scene.add(obstacle);
+}
 
 
 function addKeysListener(){
