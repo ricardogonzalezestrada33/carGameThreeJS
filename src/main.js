@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { OrbitControls} from '../threejs/examples/jsm/controls/OrbitControls.js';
 import GUI from '../threejs/examples/jsm/libs/lil-gui.module.min.js';
 
+import * as CANNON from "../cannonjs/cannon-es.js";
+import CannonDebugger from "../cannonjs/cannon-es-debugger.js";
+
 let elThreejs = document.getElementById("threejs");
 let camera,scene,renderer;
 
@@ -16,6 +19,11 @@ let keyboard = {};
 
 // camera follow player
 let enableFollow;
+
+// cannon variables
+let world;
+let cannonDebugger;
+let timeStep = 1 / 60;
 
 init();
 
@@ -57,8 +65,10 @@ function init() {
   controls.maxDistance = 500
   controls.enabled = true
 
-  
 	elThreejs.appendChild(renderer.domElement);
+
+  initCannon();
+  addCubePhysics();
 
   addBox();
   addPlane();
@@ -77,8 +87,19 @@ function animate(){
 
   if (enableFollow) followPlayer();
 
+  world.step(timeStep);
+	cannonDebugger.update();
+
 	requestAnimationFrame(animate);
 
+}
+
+function addCubePhysics(){
+  let cubeShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+  let cubeBody = new CANNON.Body({ mass: 1 });
+  cubeBody.addShape(cubeShape);
+  cubeBody.position.set(0, 2, 0);
+  world.addBody(cubeBody);
 }
 
 function addBox(){
@@ -159,4 +180,25 @@ function addGUI(){
 		}
 	});
 
+}
+
+function initCannon() {
+	// Setup world
+	world = new CANNON.World();
+	world.gravity.set(0, -9.8, 0);
+
+	initCannonDebugger();
+}
+
+function initCannonDebugger(){
+  cannonDebugger = new CannonDebugger(scene, world, {
+		onInit(body, mesh) {
+			// Toggle visibiliy on "d" press
+			document.addEventListener("keydown", (event) => {
+				if (event.key === "f") {
+					mesh.visible = !mesh.visible;
+				}
+			});
+		},
+	});
 }
