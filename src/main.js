@@ -27,8 +27,8 @@ let timeStep = 1 / 60;
 let cubeBody, planeBody;
 let slipperyMaterial, groundMaterial;
 let obstacleBody;
-
-
+let obstaclesBodies = [];
+let obstaclesMeshes = [];
 init();
 
 function init() {
@@ -43,8 +43,8 @@ function init() {
 		0.1,
 		1000
 	);
-  camera.position.z = 5;
-  camera.position.y = 1;
+  camera.position.z = 10;
+  camera.position.y = 5;
 
 
   // render
@@ -100,25 +100,42 @@ function animate(){
   world.step(timeStep);
 	cannonDebugger.update();
 
+  cubeThree.position.copy(cubeBody.position);
+  cubeThree.quaternion.copy(cubeBody.quaternion);
+  for (let i = 0; i < obstaclesBodies.length; i++) {
+    obstaclesMeshes[i].position.copy(obstaclesBodies[i].position);
+		obstaclesMeshes[i].quaternion.copy(obstaclesBodies[i].quaternion);
+	}
+
 	requestAnimationFrame(animate);
 
 }
 
 function addCubeBody(){
-  slipperyMaterial = new CANNON.Material('slippery')
-  let cubeShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+
+
+  let cubeShape = new CANNON.Box(new CANNON.Vec3(1,1,1));
+  slipperyMaterial = new CANNON.Material('slippery');
   cubeBody = new CANNON.Body({ mass: 100,material: slipperyMaterial });
   cubeBody.addShape(cubeShape);
+
+  const polyhedronShape = createCustomShape()
+  cubeBody.addShape(polyhedronShape, new CANNON.Vec3(-1, -1, 1));
+
+  // change rotation
+  cubeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 180 * 180);
+  
   cubeBody.position.set(0, 2, 0);
+
   world.addBody(cubeBody);
   console.log(cubeBody, "cubeBody");
 }
 
 function addCube(){
-  let geometry = new THREE.BoxGeometry(1,1,1);
+  let geometry = new THREE.BoxGeometry(2,2,2);
   let material = new THREE.MeshBasicMaterial({color: 'pink'});
   cubeThree = new THREE.Mesh(geometry, material);
-  cubeThree.position.set(0, 0.5, 0);
+  cubeThree.position.set(0, 1, 0);
   console.log(cubeThree, "cube");
   scene.add(cubeThree);
 }
@@ -144,20 +161,30 @@ function addPlane(){
 }
 
 function addObstacleBody(){
-  let obstacleShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
-  obstacleBody = new CANNON.Body({ mass: 10 });
-  obstacleBody.addShape(obstacleShape);
-  obstacleBody.position.set(0, 0.5, -10);
-  world.addBody(obstacleBody);
-  console.log(obstacleBody, "cubeBody");
+
+  for (let i = 0; i < 5; i++) {
+    let obstacleShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+    obstacleBody = new CANNON.Body({ mass: 1 });
+    obstacleBody.addShape(obstacleShape);
+		obstacleBody.position.set(0, 5,-(i+1) * 15);
+
+    world.addBody(obstacleBody);
+    obstaclesBodies.push(obstacleBody);
+
+  }
 }
 
 function addObstacle(){
+ 
   let geometry = new THREE.BoxGeometry(1,1,1);
   let material = new THREE.MeshBasicMaterial({color: 'red'});
   let obstacle = new THREE.Mesh(geometry, material);
-  obstacle.position.set(0, 0.5, -10);
-  scene.add(obstacle);
+
+  for (let i = 0; i < 5; i++) {
+		let obstacleMesh = obstacle.clone();
+		scene.add(obstacleMesh);
+		obstaclesMeshes.push(obstacleMesh);
+	}
 }
 
 
@@ -189,18 +216,18 @@ function movePlayer(){
   // up letter W
   // if(keyboard[87]) cubeThree.position.z -= 0.1
   // if(keyboard[87]) cubeThree.translateZ(-0.1);
-  const strengthWS = 200;
-  const forceForward = new CANNON.Vec3(0, 0, -strengthWS)
+  const strengthWS = 500;
+  const forceForward = new CANNON.Vec3(0, 0, strengthWS)
   if(keyboard[87]) cubeBody.applyLocalForce(forceForward);
 
   // // down letter S
-  const forceBack = new CANNON.Vec3(0, 0, strengthWS)
+  const forceBack = new CANNON.Vec3(0, 0, -strengthWS)
   if(keyboard[83]) cubeBody.applyLocalForce(forceBack);
 
   // left letter A
   // if(keyboard[65]) cube.rotation.y += 0.01;
   // if(keyboard[65]) cube.rotateY(0.01);
-  const strengthAD = 20;
+  const strengthAD = 200;
   const forceLeft= new CANNON.Vec3(0, strengthAD, 0)
   if(keyboard[65]) cubeBody.applyTorque(forceLeft);
 
@@ -213,8 +240,8 @@ function movePlayer(){
 
 function followPlayer(){
   camera.position.x = cubeThree.position.x;
-  camera.position.y = cubeThree.position.y + 1;
-  camera.position.z = cubeThree.position.z + 5;
+  camera.position.y = cubeThree.position.y + 5;
+  camera.position.z = cubeThree.position.z + 10;
 }
 
 
@@ -256,4 +283,26 @@ function initCannonDebugger(){
 			});
 		},
 	});
+}
+
+function createCustomShape(){
+  const vertices = [
+		new CANNON.Vec3(2, 0, 0),
+		new CANNON.Vec3(2, 0, 2),
+		new CANNON.Vec3(2, 2, 0),
+		new CANNON.Vec3(0, 0, 0),
+		new CANNON.Vec3(0, 0, 2),
+		new CANNON.Vec3(0, 2, 0),
+	]
+
+	return new CANNON.ConvexPolyhedron({
+		vertices,
+		faces: [
+      [3, 4, 5], 
+			[2, 1, 0], 
+			[1,2,5,4], 
+			[0,3,4,1], 
+			[0,2,5,3], 
+		]
+	})
 }
