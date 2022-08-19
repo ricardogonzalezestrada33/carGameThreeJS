@@ -14,7 +14,7 @@ let controls;
 let gui;
 
 // show and move cube
-let cube;
+let cubeThree;
 let keyboard = {};
 
 // camera follow player
@@ -24,6 +24,10 @@ let enableFollow;
 let world;
 let cannonDebugger;
 let timeStep = 1 / 60;
+let cubeBody, planeBody;
+let slipperyMaterial, groundMaterial;
+let obstacleBody;
+
 
 init();
 
@@ -68,11 +72,17 @@ function init() {
 	elThreejs.appendChild(renderer.domElement);
 
   initCannon();
-  addCubePhysics();
 
-  addBox();
+  addPlaneBody();
   addPlane();
+
+  addCubeBody();
+  addCube();
+
+  addObstacleBody();
   addObstacle();
+
+  addContactMaterials();
 
   addKeysListener();
 	addGUI();
@@ -94,29 +104,52 @@ function animate(){
 
 }
 
-function addCubePhysics(){
+function addCubeBody(){
+  slipperyMaterial = new CANNON.Material('slippery')
   let cubeShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
-  let cubeBody = new CANNON.Body({ mass: 1 });
+  cubeBody = new CANNON.Body({ mass: 100,material: slipperyMaterial });
   cubeBody.addShape(cubeShape);
   cubeBody.position.set(0, 2, 0);
   world.addBody(cubeBody);
+  console.log(cubeBody, "cubeBody");
 }
 
-function addBox(){
+function addCube(){
   let geometry = new THREE.BoxGeometry(1,1,1);
   let material = new THREE.MeshBasicMaterial({color: 'pink'});
-  cube = new THREE.Mesh(geometry, material);
-  cube.position.set(0, 0.5, 0);
-  console.log(cube, "cube");
-  scene.add(cube);
+  cubeThree = new THREE.Mesh(geometry, material);
+  cubeThree.position.set(0, 0.5, 0);
+  console.log(cubeThree, "cube");
+  scene.add(cubeThree);
 }
+
+
+function addPlaneBody(){
+  groundMaterial = new CANNON.Material('ground')
+  const planeShape = new CANNON.Box(new CANNON.Vec3(10, 0.01, 100));
+	planeBody = new CANNON.Body({ mass: 0, material: groundMaterial });
+	planeBody.addShape(planeShape);
+	planeBody.position.set(0, 0, -90);
+	world.addBody(planeBody);
+}
+
+
 
 function addPlane(){
   let geometry =  new THREE.BoxGeometry(20, 0, 200);
   let material = new THREE.MeshBasicMaterial({color: 'gray'});
-  let plane = new THREE.Mesh(geometry, material);
-  plane.position.set(0, 0, -90);
-  scene.add(plane);
+  let planeThree = new THREE.Mesh(geometry, material);
+  planeThree.position.set(0, 0, -90);
+  scene.add(planeThree);
+}
+
+function addObstacleBody(){
+  let obstacleShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+  obstacleBody = new CANNON.Body({ mass: 10 });
+  obstacleBody.addShape(obstacleShape);
+  obstacleBody.position.set(0, 0.5, -10);
+  world.addBody(obstacleBody);
+  console.log(obstacleBody, "cubeBody");
 }
 
 function addObstacle(){
@@ -125,6 +158,20 @@ function addObstacle(){
   let obstacle = new THREE.Mesh(geometry, material);
   obstacle.position.set(0, 0.5, -10);
   scene.add(obstacle);
+}
+
+
+function addContactMaterials(){
+  const slippery_ground = new CANNON.ContactMaterial(groundMaterial, slipperyMaterial, {
+    friction: 0.0001,
+    restitution: 0.3,
+    contactEquationStiffness: 1e8,
+    contactEquationRelaxation: 3,
+  })
+
+  // We must add the contact materials to the world
+  world.addContactMaterial(slippery_ground)
+
 }
 
 
@@ -140,26 +187,34 @@ function addKeysListener(){
 function movePlayer(){
 
   // up letter W
-  // if(keyboard[87]) cube.position.z -= 0.1
-  if(keyboard[87]) cube.translateZ(-0.1);
+  // if(keyboard[87]) cubeThree.position.z -= 0.1
+  // if(keyboard[87]) cubeThree.translateZ(-0.1);
+  const strengthWS = 200;
+  const forceForward = new CANNON.Vec3(0, 0, -strengthWS)
+  if(keyboard[87]) cubeBody.applyLocalForce(forceForward);
 
-  // down letter S
-  if(keyboard[83]) cube.translateZ(+0.1);
+  // // down letter S
+  const forceBack = new CANNON.Vec3(0, 0, strengthWS)
+  if(keyboard[83]) cubeBody.applyLocalForce(forceBack);
 
   // left letter A
   // if(keyboard[65]) cube.rotation.y += 0.01;
-  if(keyboard[65]) cube.rotateY(0.01);
+  // if(keyboard[65]) cube.rotateY(0.01);
+  const strengthAD = 20;
+  const forceLeft= new CANNON.Vec3(0, strengthAD, 0)
+  if(keyboard[65]) cubeBody.applyTorque(forceLeft);
 
-  // right letter D
-  if(keyboard[68]) cube.rotateY(-0.01);
+  // // right letter D
+  const forceRigth= new CANNON.Vec3(0, -strengthAD, 0)
+  if(keyboard[68]) cubeBody.applyTorque(forceRigth);
 
 }
 
 
 function followPlayer(){
-  camera.position.x = cube.position.x;
-  camera.position.y = cube.position.y + 1;
-  camera.position.z = cube.position.z + 5;
+  camera.position.x = cubeThree.position.x;
+  camera.position.y = cubeThree.position.y + 1;
+  camera.position.z = cubeThree.position.z + 5;
 }
 
 
